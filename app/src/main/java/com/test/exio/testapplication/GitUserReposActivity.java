@@ -26,38 +26,28 @@ import retrofit.Retrofit;
  */
 public class GitUserReposActivity extends AppCompatActivity {
     public static final String TAG="GitUserListActivity";
+    public static final String ARG_OWNER_NAME = TAG+"ownerlogin";
     ActionBar mActionBar;
     String ownerLogin;
+    String ownerName;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_user_repos);
-        mActionBar = getSupportActionBar();
-        mActionBar.setDisplayHomeAsUpEnabled(true);
-
-        String ownerLogin = null;
-        if (savedInstanceState == null) {
-            ownerLogin=getIntent().getStringExtra(GitUserReposFragment.ARG_OWNER_LOGIN);
-        }else{
-            savedInstanceState.getString(GitUserReposFragment.ARG_OWNER_LOGIN);
-        }
-
+    private void fetchName(){
         Call<GitUserDetailed> call = GitHubService.getService().user(ownerLogin);
         call.enqueue(new retrofit.Callback<GitUserDetailed>() {
             @Override
             public void onResponse(Response<GitUserDetailed> response, Retrofit retrofit) {
                 if (response.body() != null) {
                     GitUserDetailed userInfo = response.body();
-                    mActionBar.setSubtitle(userInfo.name);
+                    ownerName=userInfo.name;
+                    mActionBar.setSubtitle(ownerName);
                 } else {
                     mActionBar.setSubtitle("");
                     try {
 
                         switch (response.code()) {
-                            case 403://403 лимит запросов для неавторизованного пользователя исчерпан
+                            case 403://403 пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                                 break;
-                            case 401://401 неправильные данные авторизации
+                            case 401://401 пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                                 break;
                         }
 
@@ -76,21 +66,40 @@ public class GitUserReposActivity extends AppCompatActivity {
                 mActionBar.setSubtitle("");
             }
         });
+    }
 
-        Bundle arguments = new Bundle();
-        arguments.putString(GitUserReposFragment.ARG_OWNER_LOGIN,
-                getIntent().getStringExtra(GitUserReposFragment.ARG_OWNER_LOGIN));
-        GitUserReposFragment fragment = new GitUserReposFragment();
-        fragment.setArguments(arguments);
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.user_repos_list_pane, fragment)
-                .commit();
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_user_repos);
+        mActionBar = getSupportActionBar();
+        if(mActionBar!=null)
+            mActionBar.setDisplayHomeAsUpEnabled(true);
+
+        if(savedInstanceState!=null){
+            ownerName=savedInstanceState.getString(ARG_OWNER_NAME);
+            if(mActionBar!=null)
+                mActionBar.setSubtitle(ownerName);
+        }
+        else {
+            ownerLogin=getIntent().getStringExtra(GitUserReposFragment.ARG_OWNER_LOGIN);
+            Bundle arguments = new Bundle();
+            arguments.putString(GitUserReposFragment.ARG_OWNER_LOGIN,ownerLogin);
+            GitUserReposFragment fragment = new GitUserReposFragment();
+            fragment.setArguments(arguments);
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.user_repos_list_pane, fragment)
+                    .commit();
+
+            fetchName();
+        }
     }
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putString(GitUserReposFragment.ARG_OWNER_LOGIN,ownerLogin);
+        outState.putString(ARG_OWNER_NAME,ownerName);
     }
 
     @Override

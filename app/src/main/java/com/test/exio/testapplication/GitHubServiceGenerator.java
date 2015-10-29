@@ -13,7 +13,7 @@ import retrofit.GsonConverterFactory;
 import retrofit.Retrofit;
 
 /**
- * Created by exio on 26.10.2015.
+ * Создано: exio Дата: 26.10.2015.
  */
 public class GitHubServiceGenerator {
         private static OkHttpClient httpClient = new OkHttpClient();

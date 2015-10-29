@@ -8,7 +8,7 @@ import retrofit.http.Path;
 import retrofit.http.Query;
 
 /**
- * Created by exio1989 on 26.10.2015.
+ * Создано: exio1989 Дата: 26.10.2015.
  */
 public interface GitHub {
     @GET("/users/{owner}")

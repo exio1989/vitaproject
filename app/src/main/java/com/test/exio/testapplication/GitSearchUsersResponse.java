@@ -3,7 +3,7 @@ package com.test.exio.testapplication;
 import java.util.List;
 
 /**
- * Created by exio1989 on 28.10.2015.
+ * Создано: exio1989 Дата: 28.10.2015.
  */
 public class GitSearchUsersResponse {
     public int total_count;

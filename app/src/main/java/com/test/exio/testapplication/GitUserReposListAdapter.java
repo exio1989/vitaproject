@@ -18,7 +18,7 @@ import com.squareup.picasso.Picasso;
 import java.util.List;
 
 /**
- * Created by exio on 26.10.2015.
+ * Создано: exio Дата: 26.10.2015.
  */
 public class GitUserReposListAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
     private final int VIEW_ITEM = 1;

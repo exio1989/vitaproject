@@ -12,6 +12,12 @@
     <string name="list_empty">Список пуст</string>
     <string name="action_signin">Войти</string>
     <string name="action_search">action_search</string>
+    <string name="no_elements">Элементы отсутствуют</string>
+    <string name="signin_dialog">Вход в GitHub</string>
+    <string name="signin_dialog_entercreds">Пожалуйста, введите корректные учетные данные</string>
+    <string name="signin_dialog_success">Вход осуществлен</string>
+    <string name="dialog_login">Войти</string>
+    <string name="dialog_cancel">Отмена</string>
     <color name="action_bar_background">#F5F5F5</color>
     <color name="inactive_fork_color">#FFFFFF</color>
     <color name="active_fork_color">#DAFFBE</color>

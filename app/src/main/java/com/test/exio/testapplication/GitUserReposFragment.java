@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONObject;
@@ -33,9 +34,12 @@ import retrofit.Retrofit;
 public class GitUserReposFragment extends Fragment {
     public final static String TAG = "GitUserReposFragment";
     public static final String ARG_OWNER_LOGIN = TAG+"ownerlogin";
+    public static final String ARG_REPOS = TAG+"repos";
 
     private String ownerLogin;
     private List<GitUserRepo> repos = new ArrayList<>();
+
+    private TextView dummyText;
 
     private RecyclerView mList;
     private GitUserReposListAdapter mAdapter;
@@ -60,6 +64,12 @@ public class GitUserReposFragment extends Fragment {
                     for (GitUserRepo repo : newRepos) {
                         repos.add(repo);
                         mAdapter.notifyItemInserted(repos.size());
+                    }
+
+                    if(repos.size()==0){
+                        dummyText.setVisibility(TextView.VISIBLE);
+                    }else{
+                        dummyText.setVisibility(TextView.INVISIBLE);
                     }
                 } else {
                     //TODO вынести в коллбак в активити
@@ -98,6 +108,7 @@ public class GitUserReposFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.list_content,null);
+        dummyText = (TextView)rootView.findViewById(R.id.dummyText);
 
         mList = (RecyclerView)rootView.findViewById(R.id.list_view);
         mList.setHasFixedSize(true);
@@ -121,14 +132,32 @@ public class GitUserReposFragment extends Fragment {
         mAdapter.setOnLoadMoreListener(new OnLoadMoreListener() {
             @Override
             public void onLoadMore() {
-                if(repos.get(repos.size() - 1).has_pages) {
-                    fetchMore((repos.size() - 1)/30+2);
+                if (repos.get(repos.size() - 1).has_pages) {
+                    fetchMore((repos.size() - 1) / 30 + 2);
                 }
             }
         });
 
-        fetchMore(1);
+        repos.clear();
 
+        if(savedInstanceState!=null){
+            ownerLogin = savedInstanceState.getString(ARG_OWNER_LOGIN);
+
+            ArrayList<GitUserRepo> list = (ArrayList<GitUserRepo>) savedInstanceState.getSerializable(ARG_REPOS);
+            if(list!=null) {
+                for (GitUserRepo repo : list) {
+                    repos.add(repo);
+                    mAdapter.notifyDataSetChanged();
+                }
+            }else{
+                fetchMore(1);
+            }
+        }else {
+            if (getArguments() != null && getArguments().containsKey(ARG_OWNER_LOGIN)) {
+                ownerLogin = getArguments().getString(ARG_OWNER_LOGIN, "");
+                fetchMore(1);
+            }
+        }
         return rootView;
     }
 
@@ -151,9 +180,22 @@ public class GitUserReposFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments()!=null && getArguments().containsKey(ARG_OWNER_LOGIN)) {
-            ownerLogin = getArguments().getString(ARG_OWNER_LOGIN,"");
+
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        ArrayList<GitUserRepo> r = new ArrayList<>();
+        for(GitUserRepo repo:repos){
+            r.add(repo);
+            if(r.size()>=30){
+                break;
+            }
         }
+
+        outState.putParcelableArrayList(ARG_REPOS, r);
+        outState.putString(ARG_OWNER_LOGIN, ownerLogin);
     }
 
     private void itemClicked(int i){

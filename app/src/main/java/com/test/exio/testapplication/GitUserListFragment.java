@@ -3,6 +3,8 @@ package com.test.exio.testapplication;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -17,6 +19,7 @@ import com.squareup.okhttp.ResponseBody;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import retrofit.Call;
@@ -25,8 +28,12 @@ import retrofit.Retrofit;
 
 
 public class GitUserListFragment extends Fragment {
+    private static final String STATE_USERS = "state_users";
+    private static final String STATE_IS_ALL_USERS_LIST = "is_all_users_list";
+    private static final String STATE_SEARCH_STRING = "search_string";
+
     private static int ix=0;
-    private List<GitUser> users = new ArrayList<>();;
+    private List<GitUser> users = new ArrayList<>();
 
     private RecyclerView mList;
     private GitUserListAdapter mAdapter;
@@ -44,9 +51,9 @@ public class GitUserListFragment extends Fragment {
     private Callbacks mCallbacks = sDummyCallbacks;
 
     public interface Callbacks {
-        public void onItemSelected(String login);
+        void onItemSelected(String login);
 
-        public void onServiceError(int code, ResponseBody body);
+        void onServiceError(int code, ResponseBody body);
     }
 
     private static Callbacks sDummyCallbacks = new Callbacks() {
@@ -66,11 +73,14 @@ public class GitUserListFragment extends Fragment {
 
     public void clearSearchString() {
         searchString="";
-        if(callSearchUsers!=null) {
-            callSearchUsers.cancel();
-        }
 
         if(!isAllUsersList){
+            if(callAllUsers!=null){
+                callAllUsers.cancel();
+            }
+            if(callSearchUsers!=null) {
+                callSearchUsers.cancel();
+            }
             users.clear();
             mAdapter.notifyDataSetChanged();
             isAllUsersList=true;
@@ -79,11 +89,13 @@ public class GitUserListFragment extends Fragment {
     }
 
     public void setSearchString(String searchString) {
-        if(callAllUsers!=null) {
+        if(callAllUsers!=null){
             callAllUsers.cancel();
         }
-
-        if(isAllUsersList||searchString!=this.searchString){
+        if(callSearchUsers!=null) {
+            callSearchUsers.cancel();
+        }
+        if(isAllUsersList||!searchString.equals(this.searchString)){
             this.searchString = searchString;
             users.clear();
             mAdapter.notifyDataSetChanged();
@@ -95,10 +107,6 @@ public class GitUserListFragment extends Fragment {
     private void fetchMoreSearchedUsers(int page) {
         users.add(null);
         mAdapter.notifyItemInserted(users.size() - 1);
-
-        if(callSearchUsers!=null){
-            callSearchUsers.cancel();
-        }
 
         callSearchUsers = GitHubService.getService().searchUsers(searchString,page);//+"+in:login");
         callSearchUsers.enqueue(new retrofit.Callback<GitSearchUsersResponse>() {
@@ -136,10 +144,6 @@ public class GitUserListFragment extends Fragment {
         users.add(null);
         mAdapter.notifyItemInserted(users.size() - 1);
 
-        if(callAllUsers!=null){
-            callAllUsers.cancel();
-        }
-
         callAllUsers = GitHubService.getService().users(Integer.toString(since));
         callAllUsers.enqueue(new retrofit.Callback<List<GitUser>>() {
             @Override
@@ -173,9 +177,7 @@ public class GitUserListFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if(savedInstanceState!=null) {
-            mActivatedPosition = savedInstanceState.getInt(STATE_ACTIVATED_POSITION);
-        }
+
     }
 
     @Override
@@ -217,8 +219,38 @@ public class GitUserListFragment extends Fragment {
             }
         });
 
-        isAllUsersList=true;
-        fetchMoreAllUsers(0);
+        users.clear();
+
+        if(savedInstanceState!=null) {
+            isAllUsersList = savedInstanceState.getBoolean(STATE_IS_ALL_USERS_LIST);
+            searchString = savedInstanceState.getString(STATE_SEARCH_STRING);
+
+            mActivatedPosition = savedInstanceState.getInt(STATE_ACTIVATED_POSITION);
+
+            ArrayList<GitUser> list = (ArrayList<GitUser>) savedInstanceState.getSerializable(STATE_USERS);
+            if(callAllUsers!=null){
+                callAllUsers.cancel();
+            }
+            if(callSearchUsers!=null) {
+                callSearchUsers.cancel();
+            }
+
+            if(list!=null) {
+                for (GitUser user : list) {
+                    users.add(user);
+                    mAdapter.notifyDataSetChanged();
+                }
+            }else{
+                if(isAllUsersList) {
+                    fetchMoreAllUsers(0);
+                }else{
+                    fetchMoreSearchedUsers(0);
+                }
+            }
+        }else {
+            isAllUsersList = true;
+            fetchMoreAllUsers(0);
+        }
 
         return rootView;
     }
@@ -259,6 +291,19 @@ public class GitUserListFragment extends Fragment {
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
+        ArrayList<GitUser> u = new ArrayList<>();
+        for(GitUser user:users){
+            u.add(user);
+            if(u.size()>=30){
+                break;
+            }
+        }
+
+        outState.putParcelableArrayList(STATE_USERS, u);
+
+        outState.putBoolean(STATE_IS_ALL_USERS_LIST,isAllUsersList);
+        outState.putString(STATE_SEARCH_STRING,searchString);
+
         //нельзя использовать списки пользователей пусты!!!
 //        if (mActivatedPosition != RecyclerView.NO_POSITION) {
 //            outState.putInt(STATE_ACTIVATED_POSITION, mActivatedPosition);

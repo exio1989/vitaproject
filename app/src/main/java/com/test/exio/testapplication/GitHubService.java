@@ -1,7 +1,7 @@
 package com.test.exio.testapplication;
 
 /**
- * Created by exio1989 on 27.10.2015.
+ * Создано: exio1989 Дата: 27.10.2015.
  */
 public class GitHubService{
     private static GitHub mGithub;
