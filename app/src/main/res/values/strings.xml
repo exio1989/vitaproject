@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">Витаминный тест</string>
+    <string name="user_list_caption">Список пользователей</string>
+    <string name="user_repos_caption">Список репозиториев</string>
+    <string name="title_item_detail">Item Detail</string>
+    <string name="loading">Загружаю...</string>
+    <string name="repos_name">Имя: </string>
+    <string name="repos_html_url">Ссылка: </string>
+    <string name="repos_owner">Владелец: </string>
+    <string name="repos_description">Описание: </string>
+    <string name="user_fetch_error">Не могу получить список пользователей Причина:</string>
+    <string name="list_empty">Список пуст</string>
+    <string name="action_signin">Войти</string>
+    <string name="action_search">action_search</string>
+    <color name="action_bar_background">#F5F5F5</color>
+    <color name="inactive_fork_color">#FFFFFF</color>
+    <color name="active_fork_color">#DAFFBE</color>
+</resources>
