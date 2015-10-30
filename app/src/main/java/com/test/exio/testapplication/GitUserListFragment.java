@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -16,10 +17,7 @@ import android.widget.Toast;
 
 import com.squareup.okhttp.ResponseBody;
 
-import org.json.JSONObject;
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import retrofit.Call;
@@ -37,7 +35,7 @@ public class GitUserListFragment extends Fragment {
 
     private RecyclerView mList;
     private GitUserListAdapter mAdapter;
-    protected Handler handler;
+    private SwipeRefreshLayout refreshLayout;
 
     private static final String STATE_ACTIVATED_POSITION = "activated_position";
     private int mActivatedPosition = RecyclerView.NO_POSITION;
@@ -105,15 +103,23 @@ public class GitUserListFragment extends Fragment {
     }
 
     private void fetchMoreSearchedUsers(int page) {
-        users.add(null);
-        mAdapter.notifyItemInserted(users.size() - 1);
+        if(!refreshLayout.isRefreshing()) {
+            users.add(null);
+            mAdapter.notifyItemInserted(users.size() - 1);
+        }
 
-        callSearchUsers = GitHubService.getService().searchUsers(searchString,page);//+"+in:login");
+        callSearchUsers = GitHubService.getService(getContext().getApplicationContext()).searchUsers(searchString,page);//+"+in:login");
         callSearchUsers.enqueue(new retrofit.Callback<GitSearchUsersResponse>() {
             @Override
             public void onResponse(Response<GitSearchUsersResponse> response, Retrofit retrofit) {
-                users.remove(users.size() - 1);
-                mAdapter.notifyItemRemoved(users.size());
+                if(!refreshLayout.isRefreshing()) {
+                    users.remove(users.size() - 1);
+                    mAdapter.notifyItemRemoved(users.size());
+                }else{
+                    users.clear();
+                    mAdapter.notifyDataSetChanged();
+                }
+                refreshLayout.setRefreshing(false);
 
                 if (response.body() != null) {
                     GitSearchUsersResponse searchedUsers = response.body();
@@ -141,15 +147,23 @@ public class GitUserListFragment extends Fragment {
     }
 
     private void fetchMoreAllUsers(int since){
-        users.add(null);
-        mAdapter.notifyItemInserted(users.size() - 1);
+        if(!refreshLayout.isRefreshing()) {
+            users.add(null);
+            mAdapter.notifyItemInserted(users.size() - 1);
+        }
 
-        callAllUsers = GitHubService.getService().users(Integer.toString(since));
+        callAllUsers = GitHubService.getService(getContext().getApplicationContext()).users(Integer.toString(since));
         callAllUsers.enqueue(new retrofit.Callback<List<GitUser>>() {
             @Override
             public void onResponse(Response<List<GitUser>> response, Retrofit retrofit) {
-                users.remove(users.size() - 1);
-                mAdapter.notifyItemRemoved(users.size());
+                if(!refreshLayout.isRefreshing()) {
+                    users.remove(users.size() - 1);
+                    mAdapter.notifyItemRemoved(users.size());
+                }else{
+                    users.clear();
+                    mAdapter.notifyDataSetChanged();
+                }
+                refreshLayout.setRefreshing(false);
 
                 if (response.body() != null) {
                     List<GitUser> newUsers = response.body();
@@ -185,6 +199,18 @@ public class GitUserListFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.list_content, null);
 
+        refreshLayout = (SwipeRefreshLayout) rootView.findViewById(R.id.swipe_layout);
+        refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                if(isAllUsersList) {
+                    fetchMoreAllUsers(0);
+                }else{
+                    fetchMoreSearchedUsers(0);
+                }
+            }
+        });
+
         mList = (RecyclerView)rootView.findViewById(R.id.list_view);
         mList.setHasFixedSize(true);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
@@ -202,7 +228,6 @@ public class GitUserListFragment extends Fragment {
 
         mAdapter = new GitUserListAdapter(mList,users);
         mList.setAdapter(mAdapter);
-        handler = new Handler();
 
         mAdapter.setOnLoadMoreListener(new OnLoadMoreListener() {
             @Override
@@ -258,12 +283,6 @@ public class GitUserListFragment extends Fragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        //нельзя использовать списки пользователей пусты!!!
-//        if (savedInstanceState != null
-//                && savedInstanceState.containsKey(STATE_ACTIVATED_POSITION)) {
-//            setActivatedPosition(savedInstanceState.getInt(STATE_ACTIVATED_POSITION));
-//        }
     }
 
     @Override
@@ -285,7 +304,6 @@ public class GitUserListFragment extends Fragment {
     public void setActivatedPosition(int position){
         mActivatedPosition=position;
         mCallbacks.onItemSelected(users.get(mActivatedPosition).login);
-        //mAdapter.setSelected(mActivatedPosition);
     }
 
     @Override
@@ -303,10 +321,5 @@ public class GitUserListFragment extends Fragment {
 
         outState.putBoolean(STATE_IS_ALL_USERS_LIST,isAllUsersList);
         outState.putString(STATE_SEARCH_STRING,searchString);
-
-        //нельзя использовать списки пользователей пусты!!!
-//        if (mActivatedPosition != RecyclerView.NO_POSITION) {
-//            outState.putInt(STATE_ACTIVATED_POSITION, mActivatedPosition);
-//        }
     }
 }

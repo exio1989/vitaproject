@@ -27,7 +27,6 @@ public class GitUserListAdapter  extends RecyclerView.Adapter<RecyclerView.ViewH
     private int lastVisibleItem, totalItemCount;
     private boolean loading=false;
     private OnLoadMoreListener onLoadMoreListener;
-    //private int selectedItem=RecyclerView.NO_POSITION;
 
     GitUserListAdapter(RecyclerView  recyclerView, List<GitUser> users){
         this.context=recyclerView.getContext();
@@ -106,8 +105,6 @@ public class GitUserListAdapter  extends RecyclerView.Adapter<RecyclerView.ViewH
                         .error(R.drawable.git_error_image)
                         .into(((GitUserViewHolder) viewHolder).userPhoto);
 
-            //int color=context.getResources().getColor((selectedItem != i) ? R.color.inactive_fork_color : R.color.active_fork_color);
-            //((GitUserViewHolder) viewHolder).userName.setBackgroundColor(color);
         } else {
             ((ProgressViewHolder) viewHolder).progressBar.setIndeterminate(true);
         }
@@ -118,14 +115,6 @@ public class GitUserListAdapter  extends RecyclerView.Adapter<RecyclerView.ViewH
         super.onAttachedToRecyclerView(recyclerView);
     }
 
-//    public void setSelected(int selected) {
-//        int oldIndex=this.selectedItem;
-//        this.selectedItem = selected;
-//        if(this.selectedItem!=RecyclerView.NO_POSITION){
-//            notifyItemChanged(oldIndex);
-//        }
-//        notifyItemChanged(this.selectedItem);
-//    }
 
     public static class ProgressViewHolder extends RecyclerView.ViewHolder {
         public ProgressBar progressBar;

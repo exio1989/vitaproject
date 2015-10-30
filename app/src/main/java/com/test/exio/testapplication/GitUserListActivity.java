@@ -57,12 +57,30 @@ public class GitUserListActivity extends AppCompatActivity
                 btnLogin.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if(txtUsername.getText().toString().trim().length() > 0 && txtPassword.getText().toString().trim().length() > 0)
+                        final String username=txtUsername.getText().toString().trim();
+                        final String pass=txtPassword.getText().toString().trim();
+                        if(username.length() > 0 && pass.length() > 0)
                         {
-                            Toast.makeText(GitUserListActivity.this,
-                                    getString(R.string.signin_dialog_success), Toast.LENGTH_LONG).show();
+                            Credentials.setBasicAuthority(getApplicationContext(), username, pass);
 
-                            login.dismiss();
+                            Call<GitUserDetailed> call = GitHubService.getService(getApplicationContext()).user(username);
+                            call.enqueue(new retrofit.Callback<GitUserDetailed>() {
+                                @Override
+                                public void onResponse(Response<GitUserDetailed> response, Retrofit retrofit) {
+                                    if (response.body() == null) {
+                                        Credentials.clearBasicAuthority(getApplicationContext());
+                                        Toast.makeText(GitUserListActivity.this,
+                                                getString(R.string.dialog_bad_creds), Toast.LENGTH_LONG).show();
+                                    } else {
+                                        login.dismiss();
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Throwable t) {
+                                    //TODO
+                                }
+                            });
                         }
                         else
                         {
@@ -97,7 +115,6 @@ public class GitUserListActivity extends AppCompatActivity
 
             @Override
             public boolean onMenuItemActionCollapse(MenuItem item) {
-                Log.d(TAG, "searchview collapsed");
                 isSearchActionExpanded=false;
                 mUserListFragment.clearSearchString();
                 return true;
@@ -114,14 +131,12 @@ public class GitUserListActivity extends AppCompatActivity
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                Log.d(TAG,"searchview textSubmit");
                 mUserListFragment.setSearchString(query);
                 return false;
             }
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                Log.d(TAG,"searchview textChange");
                 searchString=newText;
                 return false;
             }
@@ -132,13 +147,10 @@ public class GitUserListActivity extends AppCompatActivity
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle presses on the action bar items
         switch (item.getItemId()) {
             case R.id.action_search:
-                Log.d(TAG,"searchview button clicked");
                 return true;
             case R.id.action_signin:
-                Log.d(TAG,"signin button clicked");
                 showLoginDialog();
                 return true;
             default:
@@ -176,30 +188,12 @@ public class GitUserListActivity extends AppCompatActivity
         }
     }
 
-    private void processServiceError(int code, ResponseBody body){
-        try {
 
-            switch (code) {
-                case 403://403 ����� �������� ��� ����������������� ������������ ��������
-                    break;
-                case 401://401 ������������ ������ �����������
-
-                    break;
-            }
-
-            JSONObject obj = new JSONObject(body.string());
-            String message = obj.get("message").toString();
-            Toast.makeText(GitUserListActivity.this, getString(R.string.user_fetch_error) + message, Toast.LENGTH_LONG)
-                    .show();
-        } catch (Exception ex) {
-            Log.d(TAG, ex.getMessage());
-        }
-    }
 
     @Override
     public void onItemSelected(String login) {
         if (mTwoPane) {
-            Call<GitUserDetailed> call = GitHubService.getService().user(login);
+            Call<GitUserDetailed> call = GitHubService.getService(getApplicationContext()).user(login);
             call.enqueue(new retrofit.Callback<GitUserDetailed>() {
                 @Override
                 public void onResponse(Response<GitUserDetailed> response, Retrofit retrofit) {
@@ -208,7 +202,7 @@ public class GitUserListActivity extends AppCompatActivity
                         mActionBar.setSubtitle(userInfo.name);
                     } else {
                         mActionBar.setSubtitle("");
-                        processServiceError(response.code(),response.errorBody());
+                        GitHubService.processServiceError(getApplicationContext(), response.code(), response.errorBody());
                     }
                 }
 
@@ -237,7 +231,7 @@ public class GitUserListActivity extends AppCompatActivity
 
     @Override
     public void onServiceError(int code, ResponseBody body) {
-        processServiceError(code,body);
+        GitHubService.processServiceError(getApplicationContext(), code, body);
     }
 
 }

@@ -1,5 +1,6 @@
 package com.test.exio.testapplication;
 
+import android.content.Context;
 import android.util.Base64;
 
 import com.squareup.okhttp.Interceptor;
@@ -22,30 +23,27 @@ public class GitHubServiceGenerator {
                         .baseUrl(Constants.GIT_API_URL)
                         .addConverterFactory(GsonConverterFactory.create());
 
-        public static <S> S createService(Class<S> serviceClass) {
-            return createService(serviceClass, null, null);
-        }
-
-        public static <S> S createService(Class<S> serviceClass, String username, String password) {
-            if (username != null && password != null) {
-                String credentials = username + ":" + password;
-                final String basic =
-                        "Basic " + Base64.encodeToString(credentials.getBytes(), Base64.NO_WRAP);
-
+        public static <S> S createService(final Context context, Class<S> serviceClass) {
                 httpClient.interceptors().add(new Interceptor() {
                     @Override
                     public Response intercept(Interceptor.Chain chain) throws IOException {
                         Request original = chain.request();
+                        Request.Builder requestBuilder = original.newBuilder();
 
-                        Request.Builder requestBuilder = original.newBuilder()
-                                .header("Authorization", basic)
-                                .method(original.method(), original.body());
+                        String creds = Credentials.getBasicAuthority(context);
+                        if(creds!=null) {
+                            final String basic =
+                                    "Basic " + Base64.encodeToString(creds.getBytes(), Base64.NO_WRAP);
+
+                            requestBuilder
+                                    .header("Authorization", basic)
+                                    .method(original.method(), original.body());
+                        }
 
                         Request request = requestBuilder.build();
                         return chain.proceed(request);
                     }
                 });
-            }
 
             Retrofit retrofit = builder.client(httpClient).build();
             return retrofit.create(serviceClass);

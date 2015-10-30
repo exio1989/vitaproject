@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -25,12 +26,6 @@ import retrofit.Call;
 import retrofit.Response;
 import retrofit.Retrofit;
 
-/**
- * A fragment representing a single Item detail screen.
- * This fragment is either contained in a {@link GitUserListActivity}
- * in two-pane mode (on tablets) or a {@link GitUserReposActivity}
- * on handsets.
- */
 public class GitUserReposFragment extends Fragment {
     public final static String TAG = "GitUserReposFragment";
     public static final String ARG_OWNER_LOGIN = TAG+"ownerlogin";
@@ -43,21 +38,27 @@ public class GitUserReposFragment extends Fragment {
 
     private RecyclerView mList;
     private GitUserReposListAdapter mAdapter;
-    protected Handler handler;
-
-    private static final String STATE_ACTIVATED_POSITION = "activated_position";
-    private int mActivatedPosition = RecyclerView.NO_POSITION;
+    private Handler handler;
+    private SwipeRefreshLayout refreshLayout;
 
     private void fetchMore(int page){
-        repos.add(null);
-        mAdapter.notifyItemInserted(repos.size() - 1);
+        if(!refreshLayout.isRefreshing()) {
+            repos.add(null);
+            mAdapter.notifyItemInserted(repos.size() - 1);
+        }
 
-        Call<List<GitUserRepo>> call = GitHubService.getService().userRepos(ownerLogin,page);
+        Call<List<GitUserRepo>> call = GitHubService.getService(getContext().getApplicationContext()).userRepos(ownerLogin,page);
         call.enqueue(new retrofit.Callback<List<GitUserRepo>>() {
             @Override
             public void onResponse(Response<List<GitUserRepo>> response, Retrofit retrofit) {
-                repos.remove(repos.size() - 1);
-                mAdapter.notifyItemRemoved(repos.size());
+                if(!refreshLayout.isRefreshing()) {
+                    repos.remove(repos.size() - 1);
+                    mAdapter.notifyItemRemoved(repos.size());
+                }else{
+                    repos.clear();
+                    mAdapter.notifyDataSetChanged();
+                }
+                refreshLayout.setRefreshing(false);
 
                 if (response.body() != null) {
                     List<GitUserRepo> newRepos = response.body();
@@ -72,23 +73,7 @@ public class GitUserReposFragment extends Fragment {
                         dummyText.setVisibility(TextView.INVISIBLE);
                     }
                 } else {
-                    //TODO вынести в коллбак в активити
-                    try {
-
-                        switch (response.code()) {
-                            case 403://403 лимит запросов для неавторизованного пользователя исчерпан
-                                break;
-                            case 401://401 неправильные данные авторизации
-                                break;
-                        }
-
-                        JSONObject obj = new JSONObject(response.errorBody().string());
-                        String message = obj.get("message").toString();
-                        Toast.makeText(getContext(), getString(R.string.user_fetch_error) + message, Toast.LENGTH_LONG)
-                                .show();
-                    } catch (Exception ex) {
-                        Log.d(TAG, ex.getMessage());
-                    }
+                    GitHubService.processServiceError(getContext().getApplicationContext(),response.code(),response.errorBody());
                 }
 
                 mAdapter.setLoaded();
@@ -108,6 +93,15 @@ public class GitUserReposFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.list_content,null);
+
+        refreshLayout = (SwipeRefreshLayout) rootView.findViewById(R.id.swipe_layout);
+        refreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                fetchMore(0);
+            }
+        });
+
         dummyText = (TextView)rootView.findViewById(R.id.dummyText);
 
         mList = (RecyclerView)rootView.findViewById(R.id.list_view);
@@ -204,8 +198,7 @@ public class GitUserReposFragment extends Fragment {
             Intent myIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
             startActivity(myIntent);
         } catch (ActivityNotFoundException e) {
-            Toast.makeText(getContext(), "No application can handle this request."
-                    + " Please install a webbrowser", Toast.LENGTH_LONG).show();
+            Toast.makeText(getContext(), getString(R.string.no_browser_error), Toast.LENGTH_LONG).show();
             e.printStackTrace();
         }
     }

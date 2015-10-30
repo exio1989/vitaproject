@@ -18,6 +18,11 @@
     <string name="signin_dialog_success">Вход осуществлен</string>
     <string name="dialog_login">Войти</string>
     <string name="dialog_cancel">Отмена</string>
+    <string name="dialog_bad_creds">Неверный логин и/или пароль</string>
+    <string name="http_git_403">Превышен лимит запросов. Авторизуйтесь на Github.</string>
+    <string name="http_git_401">Неверные данные авторизации. Учетные данные сброшены.</string>
+    <string name="http_git_unknown_error">Неизвестная ошибка.</string>
+    <string name="no_browser_error">Нечем открыть ссылку. Пожалуйста, установите браузер.</string>
     <color name="action_bar_background">#F5F5F5</color>
     <color name="inactive_fork_color">#FFFFFF</color>
     <color name="active_fork_color">#DAFFBE</color>

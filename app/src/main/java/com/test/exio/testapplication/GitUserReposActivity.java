@@ -15,15 +15,6 @@ import retrofit.Call;
 import retrofit.Response;
 import retrofit.Retrofit;
 
-/**
- * An activity representing a single Item detail screen. This
- * activity is only used on handset devices. On tablet-size devices,
- * item details are presented side-by-side with a list of items
- * in a {@link GitUserListActivity}.
- * <p/>
- * This activity is mostly just a 'shell' activity containing nothing
- * more than a {@link GitUserReposFragment}.
- */
 public class GitUserReposActivity extends AppCompatActivity {
     public static final String TAG="GitUserListActivity";
     public static final String ARG_OWNER_NAME = TAG+"ownerlogin";
@@ -32,7 +23,7 @@ public class GitUserReposActivity extends AppCompatActivity {
     String ownerName;
 
     private void fetchName(){
-        Call<GitUserDetailed> call = GitHubService.getService().user(ownerLogin);
+        Call<GitUserDetailed> call = GitHubService.getService(getApplicationContext()).user(ownerLogin);
         call.enqueue(new retrofit.Callback<GitUserDetailed>() {
             @Override
             public void onResponse(Response<GitUserDetailed> response, Retrofit retrofit) {
@@ -42,22 +33,7 @@ public class GitUserReposActivity extends AppCompatActivity {
                     mActionBar.setSubtitle(ownerName);
                 } else {
                     mActionBar.setSubtitle("");
-                    try {
-
-                        switch (response.code()) {
-                            case 403://403 ����� �������� ��� ����������������� ������������ ��������
-                                break;
-                            case 401://401 ������������ ������ �����������
-                                break;
-                        }
-
-                        JSONObject obj = new JSONObject(response.errorBody().string());
-                        String message = obj.get("message").toString();
-                        Toast.makeText(GitUserReposActivity.this, getString(R.string.user_fetch_error) + message, Toast.LENGTH_LONG)
-                                .show();
-                    } catch (Exception ex) {
-                        Log.d(TAG, ex.getMessage());
-                    }
+                    GitHubService.processServiceError(getApplicationContext(), response.code(), response.errorBody());
                 }
             }
 
